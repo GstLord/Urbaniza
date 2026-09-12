@@ -24,3 +24,11 @@ Data	Atividade	Responsável
 13/10/2026 – 19/10/2026	Redação da Justificativa Técnica e Arquitetural	Gustavo
 
 20/10/2026 – 26/10/2026	Revisão e formatação do documento da 1ª entrega	Gustavo
+
+O sistema deve permitir registrar e classificar a aptidão de uma região ao parcelamento (apta, apta com restrição ou inapta) a partir das vedações legais (alagamento, declividade, condições geológicas, áreas de preservação).
+O sistema deve permitir cadastrar loteamentos vinculados obrigatoriamente a uma região previamente cadastrada.
+O sistema deve permitir cadastrar equipamentos comunitários (escolas e unidades de saúde) com sua capacidade instalada e calcular o índice de atendimento de cada um frente à população da região.
+O sistema deve permitir calcular a população projetada de uma região, somando a população atual à população estimada dos loteamentos já aprovados e ainda não ocupados.
+O sistema deve permitir calcular e classificar o Índice de Área Verde por Habitante (IAV) da região (adequado, aceitável ou deficitário).
+O sistema deve permitir validar as dimensões mínimas do lote (área e frente) no cadastro do loteamento.
+O sistema deve permitir registrar, em cada análise emitida, a data, o responsável e a versão dos dados utilizados.
