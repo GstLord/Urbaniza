@@ -1,0 +1,25 @@
+# Urbaniza - ambiente PostgreSQL 16 da 2ª entrega
+# Subir:          docker compose up -d
+# Recriar do zero: docker compose down -v && docker compose up -d
+# Os scripts de /docker-entrypoint-initdb.d/ rodam só na 1ª criação do volume.
+services:
+  postgres:
+    image: postgres:16
+    container_name: urbaniza-db
+    environment:
+      POSTGRES_DB: urbaniza
+      POSTGRES_USER: urbaniza
+      POSTGRES_PASSWORD: urbaniza
+    ports:
+      - "5432:5432"
+    volumes:
+      - urbaniza_pgdata:/var/lib/postgresql/data
+      - ./01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./02_dados_exemplo.sql:/docker-entrypoint-initdb.d/02_dados_exemplo.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U urbaniza -d urbaniza"]
+      interval: 5s
+      retries: 10
+
+volumes:
+  urbaniza_pgdata:
