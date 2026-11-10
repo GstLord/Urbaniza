@@ -252,3 +252,18 @@ CREATE DATABASE urbaniza OWNER urbaniza;
 | As tabelas não existem ou os dados de exemplo não aparecem | O volume já existia quando os scripts foram alterados; os scripts de inicialização só rodam na primeira criação do volume. | Recrie o banco do zero (seção 8.3). |
 | Acentos aparecem incorretos no terminal do Windows | Página de código do console diferente de UTF-8. | Execute `chcp 65001` antes de `java -jar`, ou use o Windows Terminal. |
 | `psql` falha com "Peer authentication failed" (Linux) | Autenticação local do tipo `peer`. | Acrescente `-h localhost` ao comando `psql`. |
+
+## 10. Revisão do guia e do roteiro de demonstração (10/11/2026)
+
+Ambiente: Microsoft Windows 11 Pro · openjdk version 21.0.13 2026-10-20 LTS · Apache Maven 3.9.9 (8e8579a9e76f7d015ee5ec7bfcdc97d260186937) · Docker version 27.3.1, build ce12230
+
+Roteiro de demonstração (`docs/roteiro-de-demonstracao.md`) executado passo a passo — marque [x] no que funcionou:
+
+- [x] (a) CRUD completo de Região
+- [x] (b) Loteamento recusado por lote abaixo do mínimo
+- [x] (c) Indicadores da Região Norte
+- [x] (d) Emitir as análises de parcelamento
+- [x] (e) Exclusão bloqueada para preservar a rastreabilidade
+- [x] (f) Prova de persistência no PostgreSQL
+
+Pontos do guia que ficaram confusos ou que precisei fazer diferente: nenhum
