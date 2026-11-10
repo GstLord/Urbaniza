@@ -1,0 +1,368 @@
+@startuml diagrama-classes
+' Urbaniza - Diagrama de Classes da 2a entrega
+' Fonte da verdade: secao C5 do contrato tecnico (PROMPTS_2a_ENTREGA.txt).
+' Mantem o estilo e o agrupamento do diagrama da 1a entrega
+' (Nucleo do dominio, Camada de analise e rastreabilidade, Enumeracoes)
+' e acrescenta as camadas dao, service e ui.
+
+set separator none
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam shadowing false
+hide empty members
+
+title Sistema de Controle de Urbanização por Regiões\nDiagrama de Classes (2ª entrega)
+
+' ============================================================
+package "br.com.urbaniza.model.enums — Enumerações" as pkgEnums {
+  enum AptidaoParcelamento {
+    APTA
+    APTA_COM_RESTRICAO
+    INAPTA
+    + getDescricao() : String
+  }
+  enum ClassificacaoIAV {
+    ADEQUADO
+    ACEITAVEL
+    DEFICITARIO
+    + getDescricao() : String
+  }
+  enum PotencialIlhaCalor {
+    BAIXO
+    MEDIO
+    ALTO
+    + getDescricao() : String
+  }
+}
+
+' ============================================================
+package "br.com.urbaniza.model — Núcleo do domínio" as pkgModel {
+
+  class ParametrosUrbanisticos <<final>> {
+    + {static} LOTE_AREA_MINIMA_M2 : double = 125.0
+    + {static} LOTE_FRENTE_MINIMA_M : double = 5.0
+    + {static} DECLIVIDADE_LIMITE_PADRAO_PCT : double = 30.0
+    + {static} IAV_LIMITE_ADEQUADO : double = 12.0
+    + {static} IAV_LIMITE_MINIMO : double = 9.0
+    + {static} COBERTURA_VEGETAL_RISCO_BAIXO : double = 0.30
+    + {static} COBERTURA_VEGETAL_RISCO_MEDIO : double = 0.15
+    - ParametrosUrbanisticos()
+  }
+
+  class Regiao {
+    - id : Long
+    - nome : String
+    - areaTotalM2 : double
+    - areaVerdeM2 : double
+    - areaImpermeavelM2 : double
+    - populacaoAtual : int
+    - declividadeMediaPct : double
+    - loteamentos : List<Loteamento>
+    - equipamentos : List<EquipamentoComunitario>
+    + calcularPopulacaoProjetada() : int
+    + calcularIAV() : double
+    + classificarIAV() : ClassificacaoIAV
+    + calcularTaxaImpermeabilizacao() : double
+    + classificarIlhaDeCalor() : PotencialIlhaCalor
+    + adicionarLoteamento(l : Loteamento) : void
+    + adicionarEquipamento(e : EquipamentoComunitario) : void
+  }
+
+  class Loteamento {
+    - id : Long
+    - regiaoId : Long
+    - denominacao : String
+    - dataAprovacao : LocalDate
+    - areaGlebaM2 : double
+    - populacaoEstimada : int
+    - ocupado : boolean
+    - lotes : List<Lote>
+    + isAprovado() : boolean
+    + contribuiParaProjecao() : boolean
+    + calcularAreaLoteavel() : double
+    + validarDimensoesLotes() : boolean
+    + adicionarLote(l : Lote) : void
+  }
+
+  class Lote {
+    - id : Long
+    - quadra : String
+    - numero : String
+    - areaM2 : double
+    - frenteM : double
+    + atendeDimensoesMinimas() : boolean
+  }
+
+  package "br.com.urbaniza.model.equipamento" as pkgEquipamento {
+    abstract class EquipamentoComunitario <<abstract>> {
+      - id : Long
+      - regiaoId : Long
+      - nome : String
+      - capacidadeInstalada : int
+      + {abstract} calcularDemanda(populacao : int) : int
+      + {abstract} getTipo() : String
+      + calcularIndiceAtendimento(populacao : int) : double
+      + possuiDeficit(populacao : int) : boolean
+    }
+    class Escola {
+      - percentualIdadeEscolar : double
+      - nivelEnsino : String
+      + calcularDemanda(populacao : int) : int <<@Override>>
+      + getTipo() : String <<@Override>>
+    }
+    class UnidadeSaude {
+      - habitantesPorEquipe : int
+      - tipoUnidade : String
+      + calcularDemanda(populacao : int) : int <<@Override>>
+      + getTipo() : String <<@Override>>
+    }
+  }
+}
+
+' ============================================================
+package "Camada de análise e rastreabilidade (br.com.urbaniza.model)" as pkgAnalise {
+
+  class AnaliseParcelamento {
+    - id : Long
+    - regiao : Regiao
+    - analista : Analista
+    - dataEmissao : LocalDateTime
+    - versaoDados : String
+    - resultado : AptidaoParcelamento
+    - indiceAreaVerdeApurado : Double
+    - parecerTextual : String
+    - criterios : List<CriterioVedacao>
+    - resultados : List<ResultadoCriterio>
+    + executar() : void
+    + avaliarAptidao() : AptidaoParcelamento
+    + listarDeficits() : List<String>
+    ~ calcularVersaoDados() : String
+  }
+
+  class Analista {
+    - id : Long
+    - nome : String
+    - matricula : String
+    - setor : String
+  }
+
+  class ResultadoCriterio <<record>> {
+    - criterio : CriterioVedacao
+    - atendido : boolean
+    - descricaoImpedimento : String
+  }
+
+  package "br.com.urbaniza.model.criterio" as pkgCriterio {
+    abstract class CriterioVedacao <<abstract>> {
+      - id : Long
+      - regiaoId : Long
+      - codigoInterno : String
+      - fundamentoLegal : String
+      + {abstract} avaliar(r : Regiao) : boolean
+      + {abstract} isImpedimentoAbsoluto() : boolean
+      + {abstract} getTipo() : String
+      + descreverImpedimento() : String
+    }
+    class CriterioAlagamento {
+      - saneamentoExecutado : boolean
+      + avaliar(r : Regiao) : boolean <<@Override>>
+      + isImpedimentoAbsoluto() : boolean <<@Override>>
+      + getTipo() : String <<@Override>>
+      + descreverImpedimento() : String <<@Override>>
+    }
+    class CriterioDeclividade {
+      - declividadeLimite : double
+      + avaliar(r : Regiao) : boolean <<@Override>>
+      + isImpedimentoAbsoluto() : boolean <<@Override>>
+      + getTipo() : String <<@Override>>
+      + descreverImpedimento() : String <<@Override>>
+    }
+    class CriterioGeologico {
+      - laudoGeotecnico : String
+      + avaliar(r : Regiao) : boolean <<@Override>>
+      + isImpedimentoAbsoluto() : boolean <<@Override>>
+      + getTipo() : String <<@Override>>
+      + descreverImpedimento() : String <<@Override>>
+    }
+    class CriterioPreservacao {
+      - areaProtegida : boolean
+      + avaliar(r : Regiao) : boolean <<@Override>>
+      + isImpedimentoAbsoluto() : boolean <<@Override>>
+      + getTipo() : String <<@Override>>
+      + descreverImpedimento() : String <<@Override>>
+    }
+  }
+}
+
+' ============================================================
+package "br.com.urbaniza.dao" as pkgDao {
+  interface "Dao<T>" as Dao <<interface>> {
+    + inserir(e : T) : T
+    + buscarPorId(id : long) : Optional<T>
+    + listarTodos() : List<T>
+    + excluir(id : long) : void
+  }
+  interface "CrudDao<T>" as CrudDao <<interface>> {
+    + atualizar(e : T) : void
+  }
+  class RegiaoDao
+  class LoteamentoDao {
+    + listarPorRegiao(regiaoId : long) : List<Loteamento>
+  }
+  class EquipamentoComunitarioDao {
+    + listarPorRegiao(regiaoId : long) : List<EquipamentoComunitario>
+  }
+  class AnalistaDao
+  class CriterioVedacaoDao {
+    + listarPorRegiao(regiaoId : long) : List<CriterioVedacao>
+  }
+  class AnaliseParcelamentoDao {
+    + listarPorRegiao(regiaoId : long) : List<AnaliseParcelamento>
+  }
+}
+
+' ============================================================
+package "br.com.urbaniza.service" as pkgService {
+  class RegiaoService {
+    + carregarCompleta(id : long) : Regiao
+  }
+  class LoteamentoService
+  class EquipamentoService
+  class AnalistaService
+  class CriterioVedacaoService
+  class AnaliseService {
+    + emitir(regiaoId : long, analistaId : long) : AnaliseParcelamento
+  }
+}
+
+' ============================================================
+package "br.com.urbaniza.ui" as pkgUi {
+  class Entrada {
+    + lerTexto(...) : String
+    + lerInteiro(...) : int
+    + lerDouble(...) : double
+    + lerData(...) : LocalDate
+    + lerSimNao(...) : boolean
+  }
+  abstract class "MenuCrud<T>" as MenuCrud <<abstract>> {
+    + exibir() : void
+    # {abstract} listar() : void
+    # {abstract} detalhar() : void
+    # {abstract} cadastrar() : void
+    # {abstract} atualizar() : void
+    # {abstract} excluir() : void
+  }
+  class MenuRegiao
+  class MenuLoteamento
+  class MenuEquipamento
+  class MenuAnalista
+  class MenuCriterio
+  class MenuAnalise
+  class MenuPrincipal
+}
+
+' ============================================================
+' Núcleo do domínio: composições, agregação e herança
+Regiao "1" *-- "1..*" Loteamento : contém >
+Loteamento "1" *-- "1..*" Lote : contém >
+Regiao "0..1" o-- "0..*" EquipamentoComunitario : possui >
+EquipamentoComunitario <|-- Escola
+EquipamentoComunitario <|-- UnidadeSaude
+
+' Camada de análise e rastreabilidade
+AnaliseParcelamento "0..*" --> "1" Regiao : analisa >
+AnaliseParcelamento "0..*" --> "1" Analista : responsável >
+AnaliseParcelamento "0..*" --> "1..*" CriterioVedacao : aplica >
+AnaliseParcelamento "1" *-- "0..*" ResultadoCriterio : registra >
+ResultadoCriterio "0..*" --> "1" CriterioVedacao
+Regiao "1" *-- "0..*" CriterioVedacao : vedações da região >
+CriterioVedacao ..> Regiao : avalia >
+CriterioVedacao <|-- CriterioAlagamento
+CriterioVedacao <|-- CriterioDeclividade
+CriterioVedacao <|-- CriterioGeologico
+CriterioVedacao <|-- CriterioPreservacao
+
+' Enumerações
+AnaliseParcelamento ..> AptidaoParcelamento
+Regiao ..> ClassificacaoIAV
+Regiao ..> PotencialIlhaCalor
+Regiao ..> ParametrosUrbanisticos
+Lote ..> ParametrosUrbanisticos
+
+' Persistência
+Dao <|-- CrudDao
+CrudDao <|.. RegiaoDao
+CrudDao <|.. LoteamentoDao
+CrudDao <|.. EquipamentoComunitarioDao
+CrudDao <|.. AnalistaDao
+CrudDao <|.. CriterioVedacaoDao
+Dao <|.. AnaliseParcelamentoDao
+
+' Serviços
+RegiaoService --> RegiaoDao
+LoteamentoService --> LoteamentoDao
+LoteamentoService --> RegiaoDao
+EquipamentoService --> EquipamentoComunitarioDao
+AnalistaService --> AnalistaDao
+CriterioVedacaoService --> CriterioVedacaoDao
+AnaliseService --> AnaliseParcelamentoDao
+AnaliseService --> RegiaoService
+AnaliseService --> CriterioVedacaoDao
+AnaliseService --> AnalistaDao
+AnaliseService ..> AnaliseParcelamento : executar() >
+
+' Interface de console
+MenuCrud <|-- MenuRegiao
+MenuCrud <|-- MenuLoteamento
+MenuCrud <|-- MenuEquipamento
+MenuCrud <|-- MenuAnalista
+MenuCrud <|-- MenuCriterio
+MenuCrud --> Entrada
+MenuPrincipal --> MenuRegiao
+MenuPrincipal --> MenuLoteamento
+MenuPrincipal --> MenuEquipamento
+MenuPrincipal --> MenuAnalista
+MenuPrincipal --> MenuCriterio
+MenuPrincipal --> MenuAnalise
+MenuAnalise --> Entrada
+MenuRegiao --> RegiaoService
+MenuLoteamento --> LoteamentoService
+MenuEquipamento --> EquipamentoService
+MenuAnalista --> AnalistaService
+MenuCriterio --> CriterioVedacaoService
+MenuAnalise --> AnaliseService
+
+' ============================================================
+' Extensões em relação à 1ª entrega (seção C7)
+note as NotaE1
+  <b>E1</b> Regiao.declividadeMediaPct:
+  dado medido da região usado por
+  CriterioDeclividade.avaliar() (RN02).
+end note
+NotaE1 .. Regiao
+
+note as NotaE2
+  <b>E2</b> CriterioVedacao.regiaoId:
+  vincula cada critério à região
+  cujos fatos ele descreve.
+  <b>E3</b> isImpedimentoAbsoluto():
+  alagamento e declividade => APTA_COM_RESTRICAO;
+  geológico e preservação => INAPTA (RN15).
+end note
+NotaE2 .. CriterioVedacao
+
+note as NotaE4
+  <b>E4</b> ResultadoCriterio:
+  representa em Java a tabela
+  analise_criterio do DER.
+end note
+NotaE4 .. ResultadoCriterio
+
+legend bottom
+  Composição (losango preenchido): a parte não existe sem o todo.
+  Agregação (losango vazio): a parte sobrevive à exclusão do todo.
+  Método {abstract} (itálico): abstrato, implementado nas subclasses com @Override.
+  Notas E1–E4: extensões mínimas em relação à 1ª entrega (ver decisoes-de-modelagem.md).
+endlegend
+
+@enduml
