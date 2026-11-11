@@ -162,3 +162,20 @@ LEFT JOIN unidade_saude us ON us.id = e.id;
 | Região Norte - Jardim das Águas | 20.400 | 8,82 DEFICITARIO | 45,00% | ALTO (9%) | escola 0,86 déficit; UBS 0,83 déficit | APTA_COM_RESTRICAO |
 | Região Central - Vila Esperança | 21.000 | 14,29 ADEQUADO | 50,00% | MEDIO (25%) | escola 1,27; UBS 1,00 (sem déficit) | APTA |
 | Região Sul - Serra Alta | 6.000 | 250,00 ADEQUADO | 10,00% | BAIXO (50%) | UBS 0,50 déficit | INAPTA |
+
+## Validação em ambiente próprio (11/11/2026)
+
+| Item | Resultado |
+|------|-----------|
+| Sistema operacional | Microsoft Windows 11 Pro |
+| Java | java version 25.0.2 2026-01-20 LTS |
+| Docker | Docker version 29.9.3, build 5457199 |
+| PostgreSQL (container) | 16.15 (Debian 16.15-1.pgdg13+2) |
+| Build | BUILD FAILURE |
+| Testes (unitários + integração, `URBANIZA_IT=true`) | Tests run: 64, Failures: 2, Errors: 8, Skipped: 0 |
+
+Consultas de `03_consultas_verificacao.sql` comparadas com os valores esperados (seção "Valores esperados com os dados de exemplo"):
+
+- Região Norte: Pop projetada: 20400, IAV 8.82 DEFICITARIO, 45% Taxa de Impermeabilização, bateu.
+- Região Central: Pop projetada: 21000, IAV 14.29 ADEQUADO, 50% Taxa de Impermeabilização, bateu.
+- Região Sul: Pop projetada: 6000, IAV 250.00 ADEQUADO, 10% Taxa de Impermeabilização, bateu.
